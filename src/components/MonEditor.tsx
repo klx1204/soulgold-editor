@@ -249,6 +249,7 @@ export function MonEditor({ mon: original, isParty, shinyOdds = 512, onClose, on
             <h3>招式</h3>
             <Button size="sm" onClick={learnMoves}>按等级补全招式</Button>
           </div>
+          <div className="muted small" style={{ marginTop: 6 }}>仅列出该物种可学招式（含进化前家族、招式机、教学、蛋招式）。Lv.xx 表示升级可学；其余为招式机/教学类。</div>
           <div className="move-list">
             {mon.moves.map((id, i) => {
               const m = MOVES.find((x) => x.id === id);
