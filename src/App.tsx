@@ -21,6 +21,46 @@ const TABS: { key: Tab; label: string; hint: string }[] = [
   { key: 'export', label: '导出', hint: '校验并下载' },
 ];
 
+type ThemeMode = 'system' | 'light' | 'dark';
+const THEME_KEY = 'soulgold-theme';
+const THEME_META: Record<ThemeMode, { label: string; icon: string }> = {
+  system: { label: '跟随系统', icon: '◐' },
+  light: { label: '浅色', icon: '☀' },
+  dark: { label: '深色', icon: '☾' },
+};
+
+function readThemeMode(): ThemeMode {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === 'light' || v === 'dark') return v;
+  } catch {}
+  return 'system';
+}
+
+function useTheme() {
+  const [mode, setMode] = React.useState<ThemeMode>(readThemeMode);
+  const [systemDark, setSystemDark] = React.useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else mq.addListener(onChange);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+      else mq.removeListener(onChange);
+    };
+  }, []);
+  const resolved = mode === 'system' ? (systemDark ? 'dark' : 'light') : mode;
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = resolved;
+    document.documentElement.style.colorScheme = resolved;
+    try { localStorage.setItem(THEME_KEY, mode); } catch {}
+  }, [mode, resolved]);
+  const cycle = () => setMode((m) => m === 'system' ? 'light' : m === 'light' ? 'dark' : 'system');
+  return { mode, resolved, cycle };
+}
+
 export default function App() {
   const [save, setSave] = React.useState<SaveFile | null>(null);
   const [original, setOriginal] = React.useState<Uint8Array | null>(null);
@@ -32,6 +72,7 @@ export default function App() {
   const [drag, setDrag] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const theme = useTheme();
 
   const checks: Check[] = React.useMemo(() => (save ? validateSave(save) : []), [save, tick]);
 
@@ -106,6 +147,12 @@ export default function App() {
           </div>
         </div>
         <div className="top-actions">
+          <button className="theme-btn" onClick={theme.cycle}
+            title={`当前主题：${THEME_META[theme.mode].label}；点击切换（跟随系统 → 浅色 → 深色）`}
+            aria-label={`主题：${THEME_META[theme.mode].label}，点击切换`}>
+            <span className="theme-icon">{THEME_META[theme.mode].icon}</span>
+            <span className="theme-label">{THEME_META[theme.mode].label}</span>
+          </button>
           <input id="save-file" ref={inputRef} className="file-input" type="file"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); e.currentTarget.value = ''; }} />
           <label className="btn top-import" htmlFor="save-file">导入存档</label>
