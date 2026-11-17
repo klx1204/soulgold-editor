@@ -332,3 +332,18 @@ select.input { cursor: pointer; }
 .toggle-btn.on { background: linear-gradient(145deg, #fff7e4, #f3e2bd); border-color: #e0c48b; color: var(--gold-deep); }
 .pick-tag { font-style: normal; font-size: 10px; color: var(--gold-deep); background: var(--gold-soft); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
 .pick-tag.illegal { color: var(--red); background: var(--red-soft); }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+label.btn, label.link { cursor: pointer; }
+label.btn { display: inline-flex; align-items: center; justify-content: center; }
+.ipad-tip { margin: 16px 0 4px; text-align: left; background: #faf7f0; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.ipad-tip summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gold-deep); }
+.ipad-tip p { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+.error-banner { position: sticky; top: 66px; z-index: 35; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1384px; margin: 10px auto 0; padding: 10px 14px; background: var(--red-soft); border: 1px solid #eccbc4; border-radius: 10px; color: #7d2d23; font-size: 12.5px; }
+.error-banner button { border: 0; background: transparent; color: #7d2d23; font-size: 14px; padding: 2px 6px; }
+@media (max-width: 860px) { .error-banner { top: 58px; margin: 8px 16px 0; } }
+@media (hover: none) {
+  .box-slot { min-height: 124px; }
+  .box-slot:hover .box-actions { display: flex; }
+  .box-actions { display: flex; position: static; background: transparent; border-top: 1px solid var(--line); padding: 4px 0 0; margin-top: 4px; }
+  .box-actions i { font-size: 10px; }
+}

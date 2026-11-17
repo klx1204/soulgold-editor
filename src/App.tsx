@@ -45,7 +45,11 @@ export default function App() {
   const load = async (file: File) => {
     try {
       setError('');
+      if (file.size === 0) throw new Error('这个文件是空的，请重新导出存档');
       const buf = new Uint8Array(await file.arrayBuffer());
+      if (buf.length !== 0x20000) {
+        throw new Error(`文件大小是 ${buf.length} 字节，不是 128 KiB（131072 字节）。请确认选中的是模拟器导出的 .sav，而不是压缩包。`);
+      }
       const parsed = new SaveFile(buf);
       setSave(parsed);
       setOriginal(buf);
@@ -69,7 +73,10 @@ export default function App() {
     const blob = new Blob([bytes as unknown as BlobPart], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = name; a.click();
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
@@ -99,12 +106,14 @@ export default function App() {
           </div>
         </div>
         <div className="top-actions">
-          <input ref={inputRef} type="file" accept=".sav,.sa1,.dsv,.bin" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); e.currentTarget.value = ''; }} />
-          <Button onClick={() => inputRef.current?.click()}>导入存档</Button>
+          <input id="save-file" ref={inputRef} className="file-input" type="file"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); e.currentTarget.value = ''; }} />
+          <label className="btn" htmlFor="save-file">导入存档</label>
           <Button variant="primary" disabled={!save} onClick={exportSave}>导出修改版</Button>
         </div>
       </header>
 
+      {error && <div className="error-banner"><span>{error}</span><button onClick={() => setError('')} aria-label="关闭">✕</button></div>}
       {drag && <div className="drop-overlay"><div><b>松开以导入存档</b><span>支持 128 KiB 的 .sav / .sa1 / .dsv</span></div></div>}
 
       {!save ? (
@@ -113,8 +122,12 @@ export default function App() {
             <div className="landing-mark"><span /><i /><b /></div>
             <h2>把存档拖进来</h2>
             <p>在浏览器本地解析《宝可梦 魂金》v1.2.1 汉化版存档。文件不会上传，也不依赖服务器。</p>
-            <Button variant="primary" onClick={() => inputRef.current?.click()}>选择存档文件</Button>
+            <label className="btn btn-primary" htmlFor="save-file">选择存档文件</label>
             <p className="muted small">当前支持：128 KiB 标准 GBA 存档 · BX21 盒子格式 · 双存档槽</p>
+            <details className="ipad-tip">
+              <summary>iPad 上选不到 .sav？</summary>
+              <p>文件选择器现在允许任意文件。如果 .sav 显示为灰色，点右上角「浏览」→「我的 iPad / iCloud 云盘 / 下载」，再选择存档；也可以用「文件」App 长按 .sav →「共享」→ 存到「我的 iPad」后再导入。如果文件仍然被置灰，可以把文件临时改名为 .bin（内容不变），再选择。</p>
+            </details>
             {error && <div className="alert alert-error">{error}</div>}
             <div className="landing-notes">
               <div><b>结构校验</b><span>扇区校验和 / BX21 头 / 辅助扇区</span></div>
@@ -141,7 +154,7 @@ export default function App() {
               ))}
             </nav>
             <div className="sidebar-foot">
-              <button className="link" onClick={() => inputRef.current?.click()}>更换存档</button>
+              <label className="link" htmlFor="save-file">更换存档</label>
               <button className="link" onClick={downloadOriginal}>下载原始备份</button>
             </div>
           </aside>
