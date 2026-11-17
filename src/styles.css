@@ -322,7 +322,7 @@ select.input { cursor: pointer; }
   .landing-notes { grid-template-columns: 1fr; }
   .topbar { padding: 10px 16px; }
   .brand p { display: none; }
-  .top-actions .btn:first-of-type { display: none; }
+  .top-actions .top-import { display: none; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .modal { max-height: 94vh; }
   .modal-backdrop { padding: 10px; }

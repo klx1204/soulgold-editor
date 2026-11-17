@@ -108,7 +108,7 @@ export default function App() {
         <div className="top-actions">
           <input id="save-file" ref={inputRef} className="file-input" type="file"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); e.currentTarget.value = ''; }} />
-          <label className="btn" htmlFor="save-file">导入存档</label>
+          <label className="btn top-import" htmlFor="save-file">导入存档</label>
           <Button variant="primary" disabled={!save} onClick={exportSave}>导出修改版</Button>
         </div>
       </header>
