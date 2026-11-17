@@ -1,6 +1,6 @@
 import React from 'react';
 import { BoxMon, calcStats, decodeName, encodeName, expForLevel, levelForExp, NATURES, applyStats } from '../lib/pokemon';
-import { ABILITIES_BY_CONST, ITEMS, MOVES, NATURES_BY_ID, SPECIES, SPECIES_BY_ID, TYPE_FILTER, TYPE_ZH, abilityName, itemName, itemSub, moveName, moveSub, speciesName, speciesSub } from '../lib/data';
+import { ABILITIES_BY_CONST, ITEMS, MOVES, NATURES_BY_ID, SPECIES, SPECIES_BY_ID, TYPE_FILTER, TYPE_LIST, TYPE_ZH, abilityName, itemName, itemSub, moveName, moveSub, speciesName, speciesSub } from '../lib/data';
 import { Button, Card, Field, Modal, NumberInput, Picker, TextInput, TypeChip } from './ui';
 
 interface Props {
@@ -256,7 +256,7 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
             <div className="kv"><span>球种</span><span>#{mon.pokeball}</span></div>
             <div className="kv"><span>太晶属性</span>
               <select className="input" value={mon.teraType} onChange={(e) => update((m) => { m.teraType = Number(e.target.value); })}>
-                {Object.entries(TYPE_ZH).map(([k, v], i) => <option key={k} value={i}>{v}</option>)}
+                {TYPE_LIST.map((t, i) => <option key={t} value={i}>{TYPE_ZH[t]}</option>)}
               </select>
             </div>
           </Card>

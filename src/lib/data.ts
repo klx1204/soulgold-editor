@@ -51,6 +51,8 @@ export const TYPE_ZH: Record<string, string> = {
   ELECTRIC: '电', PSYCHIC: '超能力', ICE: '冰', DRAGON: '龙', DARK: '恶', FAIRY: '妖精',
 };
 
+export const TYPE_LIST = ['NORMAL','FIGHTING','FLYING','POISON','GROUND','ROCK','BUG','GHOST','STEEL','FIRE','WATER','GRASS','ELECTRIC','PSYCHIC','ICE','DRAGON','DARK','FAIRY'];
+
 export const TYPE_COLOR: Record<string, string> = {
   NORMAL: '#9fa39a', FIGHTING: '#c0563b', FLYING: '#8f9fd4', POISON: '#9b5ca5', GROUND: '#c8a96b',
   ROCK: '#b5a35c', BUG: '#94a83c', GHOST: '#6b5f9e', STEEL: '#8e9aa6', FIRE: '#dc6b3b', WATER: '#4b8ed1',

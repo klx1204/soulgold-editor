@@ -25,7 +25,7 @@ export function BagPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s: Sa
 
   const addItem = () => {
     const empty = slots.findIndex((s) => !s.item);
-    if (empty < 0) return;
+    if (empty < 0) { alert('这个口袋已满'); return; }
     setPicking({ pc, index: empty });
   };
 
