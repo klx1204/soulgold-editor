@@ -44,6 +44,8 @@ export function validateSave(save: SaveFile): Check[] {
     if (Math.abs(lvlFromExp - mon.level) > 1) out.push({ level: 'warn', title: `队伍 ${i + 1} 经验`, detail: `经验值对应 ${lvlFromExp} 级，等级字段为 ${mon.level}` });
     const badMoves = mon.moves.filter((m) => m && !MOVES_BY_ID.has(m));
     if (badMoves.length) out.push({ level: 'warn', title: `队伍 ${i + 1} 招式`, detail: `未知招式 ${badMoves.join(', ')}` });
+    const illegal = mon.moves.filter((m) => m && !sp.learnable.includes(m));
+    if (illegal.length) out.push({ level: 'warn', title: `队伍 ${i + 1} 非法招式`, detail: `${illegal.join(', ')} 不在该物种合法招式表中` });
     if (mon.hp > mon.maxHP) out.push({ level: 'warn', title: `队伍 ${i + 1} HP`, detail: `${mon.hp} / ${mon.maxHP}` });
   }
 
@@ -55,9 +57,16 @@ export function validateSave(save: SaveFile): Check[] {
       if (raw.every((x) => x === 0)) continue;
       boxMons++;
       const mon = new BoxMon(raw);
-      if (!SPECIES_BY_ID.has(mon.species)) {
+      const bsp = SPECIES_BY_ID.get(mon.species);
+      if (!bsp) {
         boxIssues++;
         out.push({ level: 'warn', title: `盒子 ${b + 1}-${s + 1} 物种`, detail: `未知物种 #${mon.species}` });
+      } else {
+        const illegal = mon.moves.filter((m) => m && !bsp.learnable.includes(m));
+        if (illegal.length) {
+          boxIssues++;
+          out.push({ level: 'warn', title: `盒子 ${b + 1}-${s + 1} 非法招式`, detail: `${illegal.join(', ')} 不在该物种合法招式表中` });
+        }
       }
       const evTotal = Object.values(mon.evs).reduce((a, b2) => a + b2, 0);
       if (evTotal > 510) out.push({ level: 'warn', title: `盒子 ${b + 1}-${s + 1} 努力值`, detail: `总和 ${evTotal} > 510` });

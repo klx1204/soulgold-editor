@@ -257,7 +257,7 @@ export function MonEditor({ mon: original, isParty, shinyOdds = 512, onClose, on
                 <div key={i} className="move-row">
                   <span className="move-slot">{i + 1}</span>
                   <button className="select-like grow" onClick={() => setPicker(i)}>
-                    <span>{moveName(id)}</span><span>{m ? `${TYPE_ZH[m.type] ?? m.type} · 威力 ${m.power || '—'} · PP ${m.pp}` : ''}</span>
+                    <span>{moveName(id)}{id > 0 && !sp.learnable.includes(id) && <em className="pick-tag illegal">非法</em>}</span><span>{m ? `${TYPE_ZH[m.type] ?? m.type} · 威力 ${m.power || '—'} · PP ${m.pp}` : ''}</span>
                   </button>
                   <NumberInput value={mon.pp[i] ?? 0} min={0} max={99} onChange={(v) => update((m2) => { const pp = [...m2.pp]; pp[i] = v; m2.pp = pp; })} />
                 </div>

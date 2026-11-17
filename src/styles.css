@@ -331,3 +331,4 @@ select.input { cursor: pointer; }
 .toggle-btn:hover { border-color: var(--gold); }
 .toggle-btn.on { background: linear-gradient(145deg, #fff7e4, #f3e2bd); border-color: #e0c48b; color: var(--gold-deep); }
 .pick-tag { font-style: normal; font-size: 10px; color: var(--gold-deep); background: var(--gold-soft); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+.pick-tag.illegal { color: var(--red); background: var(--red-soft); }
