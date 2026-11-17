@@ -45,6 +45,12 @@ export class BoxMon {
   get flagsByte() { return this.data[21]; }
   set flagsByte(v) { this.data[21] = v; }
   get isEgg() { return (this.data[21] & 4) !== 0; }
+  get shinyModifier() { return (u16(this.data, 30) >> 14) & 1; }
+  set shinyModifier(v) { w16(this.data, 30, (u16(this.data, 30) & ~(1 << 14)) | ((v & 1) << 14)); }
+  get pokerusStrain() { return (this.pokerus >> 4) & 0xf; }
+  set pokerusStrain(v) { this.pokerus = ((v & 0xf) << 4) | (this.pokerus & 0xf); }
+  get pokerusDays() { return this.pokerus & 0xf; }
+  set pokerusDays(v) { this.pokerus = (this.pokerus & 0xf0) | (v & 0xf); }
   get hasSpecies() { return (this.data[21] & 2) !== 0; }
   get otNameBytes() { return this.data.slice(22, 29); }
   set otNameBytes(v: Uint8Array) {
@@ -190,6 +196,17 @@ export const NATURES = [
 ] as const;
 
 export function natureFromPid(pid: number) { return pid % 25; }
+
+export function shinyValue(mon: BoxMon) {
+  const x = (mon.otId ^ mon.pid) >>> 0;
+  return ((x >>> 16) ^ (x & 0xffff)) & 0xffff;
+}
+export function isShinyMon(mon: BoxMon, odds = 512) {
+  return (shinyValue(mon) < odds) !== (mon.shinyModifier !== 0);
+}
+export function setMonShiny(mon: BoxMon, on: boolean, odds = 512) {
+  mon.shinyModifier = ((shinyValue(mon) < odds) !== on) ? 1 : 0;
+}
 
 export const GROWTH_RATES: Record<number, { name: string; max: number; fn: (n: number) => number }> = {
   0: { name: 'Medium Fast', max: 100, fn: (n) => n ** 3 },

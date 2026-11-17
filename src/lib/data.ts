@@ -8,15 +8,16 @@ import varsJson from '../data/vars.json';
 import charmapJson from '../data/charmap.json';
 
 export interface Species {
-  id: number; name: string; zh: string; nat: number;
+  id: number; name: string; zh: string; nat: number; johto: number;
   types: string[]; base: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
   growth: number; gender: number; abilities: string[];
   levelUp: { level: number; move: string }[];
+  learnable: number[];
 }
 export interface Item { id: number; const: string; name: string; zh: string; pocket: number; desc: string }
 export interface Move { id: number; const: string; name: string; zh: string; pp: number; power: number; acc: number; type: string; desc: string }
 export interface Ability { id: number; const: string; name: string; zh: string; desc: string }
-export interface Nature { id: number; name: string; zh: string }
+export interface Nature { id: number; name: string; zh: string; plus: string; minus: string }
 export interface FlagDef { id: number; name: string; desc: string }
 export interface VarDef { id: number; name: string; desc: string }
 
@@ -64,6 +65,31 @@ export function speciesName(id: number): string {
   const s = SPECIES_BY_ID.get(id);
   if (!s) return `#${id}`;
   return s.zh || s.name;
+}
+export function speciesDex(id: number): string {
+  const s = SPECIES_BY_ID.get(id);
+  if (!s) return `#${id}`;
+  if (s.johto) return `城都 #${String(s.johto).padStart(3, '0')}`;
+  if (s.nat) return `全国 #${String(s.nat).padStart(4, '0')}`;
+  return '未收录';
+}
+export function speciesDexFull(id: number): string {
+  const s = SPECIES_BY_ID.get(id);
+  if (!s) return `内部 #${id}`;
+  const parts = [];
+  if (s.johto) parts.push(`城都 #${s.johto}`);
+  if (s.nat) parts.push(`全国 #${s.nat}`);
+  parts.push(`内部 #${s.id}`);
+  return parts.join(' · ');
+}
+export function speciesInternal(id: number): string {
+  const s = SPECIES_BY_ID.get(id);
+  return s ? `内部 #${s.id}` : `内部 #${id}`;
+}
+export function natureEffect(id: number): string {
+  const n = NATURES_BY_ID.get(id);
+  if (!n) return '';
+  return n.plus ? `+${n.plus} / -${n.minus}` : '无能力修正';
 }
 export function speciesSub(id: number): string {
   const s = SPECIES_BY_ID.get(id);

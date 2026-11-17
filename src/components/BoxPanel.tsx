@@ -1,7 +1,7 @@
 import React from 'react';
 import { SaveFile } from '../lib/save';
-import { BoxMon, calcStats, decodeName, encodeName, levelForExp } from '../lib/pokemon';
-import { SPECIES_BY_ID, TYPE_FILTER, itemName, speciesName } from '../lib/data';
+import { BoxMon, calcStats, decodeName, encodeName, isShinyMon, levelForExp } from '../lib/pokemon';
+import { SPECIES_BY_ID, TYPE_FILTER, itemName, speciesDex, speciesName } from '../lib/data';
 import { createMon } from '../lib/create';
 import { Button, Card, Empty, SectionTitle, TextInput, TypeChip } from './ui';
 import { MonEditor, SpeciesPicker } from './MonEditor';
@@ -98,11 +98,11 @@ export function BoxPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s: Sa
             const sp = SPECIES_BY_ID.get(mon.species);
             const lvl = sp ? levelForExp(sp.growth, mon.exp) : 0;
             const name = decodeName(mon.nicknameBytes).trim() || speciesName(mon.species);
-            const shiny = ((mon.pid ^ mon.otId) >>> 0) < 8 || ((mon.data[31] >> 6) & 1) === 1;
+            const shiny = isShinyMon(mon, save.flag(0x95e) ? 256 : 512);
             return <button key={s} className="box-slot filled" onClick={() => setEdit({ b: box, s })}>
               <span className="slot-no">{s + 1}</span>
               <span className="box-title">{name}{shiny && <span className="shiny">★</span>}</span>
-              <span className="box-sub">Lv.{lvl} · {itemName(mon.heldItem)}</span>
+              <span className="box-sub">Lv.{lvl} · {speciesDex(mon.species)}{mon.pokerusDays > 0 ? ' · 病毒' : ''}</span>
               {sp && <span className="box-types">{TYPE_FILTER(sp.types).map((t) => <TypeChip key={t} type={t} />)}</span>}
               <span className="box-actions" onClick={(e) => e.stopPropagation()}>
                 <i onClick={() => copy(box, s)} title="复制">复制</i>
@@ -114,8 +114,8 @@ export function BoxPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s: Sa
           })}
         </div>
       </Card>
-      {edit && <MonEditor mon={new BoxMon(save.boxMon(edit.b, edit.s))} isParty={false} onClose={() => setEdit(null)}
-        onApply={(mon) => mutate((s) => s.setBoxMon(edit.b, edit.s, mon.data))} />}
+      {edit && <MonEditor mon={new BoxMon(save.boxMon(edit.b, edit.s))} isParty={false} shinyOdds={save.flag(0x95e) ? 256 : 512}
+        onClose={() => setEdit(null)} onApply={(mon) => mutate((s) => s.setBoxMon(edit.b, edit.s, mon.data))} />}
       {adding && <SpeciesPicker onClose={() => setAdding(null)} onPick={(sp) => {
         const mon = createMon(save, sp.id, 5, false);
         mutate((s) => s.setBoxMon(adding.b, adding.s, mon.data));

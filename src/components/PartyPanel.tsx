@@ -1,7 +1,7 @@
 import React from 'react';
 import { SaveFile } from '../lib/save';
-import { BoxMon, calcStats, decodeName } from '../lib/pokemon';
-import { NATURES_BY_ID, SPECIES_BY_ID, TYPE_FILTER, itemName, speciesName, speciesSub } from '../lib/data';
+import { BoxMon, calcStats, decodeName, isShinyMon } from '../lib/pokemon';
+import { NATURES_BY_ID, SPECIES_BY_ID, TYPE_FILTER, itemName, speciesDex, speciesName, speciesSub } from '../lib/data';
 import { createMon } from '../lib/create';
 import { Button, Card, Empty, SectionTitle, TypeChip } from './ui';
 import { MonEditor, SpeciesPicker } from './MonEditor';
@@ -60,8 +60,8 @@ export function PartyPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s: 
       </div>
 
       {edit !== null && save.partyCount > edit && (
-        <MonEditor mon={new BoxMon(save.partyMon(edit))} isParty onClose={() => setEdit(null)}
-          onApply={(mon) => mutate((s) => s.setPartyMon(edit, mon.data))} />
+        <MonEditor mon={new BoxMon(save.partyMon(edit))} isParty shinyOdds={save.flag(0x95e) ? 256 : 512}
+          onClose={() => setEdit(null)} onApply={(mon) => mutate((s) => s.setPartyMon(edit, mon.data))} />
       )}
       {adding && <SpeciesPicker onClose={() => setAdding(false)} onPick={(sp) => add(sp.id)} />}
     </div>
@@ -72,7 +72,9 @@ function PartyCard({ save, mon, index, onEdit, onRemove }: { save: SaveFile; mon
   const sp = SPECIES_BY_ID.get(mon.species);
   const name = decodeName(mon.nicknameBytes).trim() || speciesName(mon.species);
   const pct = mon.maxHP ? Math.max(0, Math.min(100, (mon.hp / mon.maxHP) * 100)) : 0;
-  const shiny = ((mon.pid ^ mon.otId) >>> 0) < 8 || ((mon.data[31] >> 6) & 1) === 1;
+  const shiny = isShinyMon(mon, save.flag(0x95e) ? 256 : 512);
+  const infected = mon.pokerusDays > 0;
+  const cured = !infected && mon.pokerusStrain > 0;
   return (
     <Card className="party-card">
       <div className="party-top">
@@ -83,13 +85,15 @@ function PartyCard({ save, mon, index, onEdit, onRemove }: { save: SaveFile; mon
           <div className="row between">
             <div>
               <div className="party-name">{name}{shiny && <span className="shiny">★</span>}</div>
-              <div className="muted small">{speciesName(mon.species)}{speciesSub(mon.species) && ` · ${speciesSub(mon.species)}`}</div>
+              <div className="muted small">{speciesName(mon.species)}{speciesSub(mon.species) && ` · ${speciesSub(mon.species)}`} · {speciesDex(mon.species)}</div>
             </div>
             <div className="level">Lv.{mon.level}</div>
           </div>
           <div className="row gap wrap" style={{ marginTop: 4 }}>
             {sp && TYPE_FILTER(sp.types).map((t) => <TypeChip key={t} type={t} />)}
             <span className="muted small">{NATURES_BY_ID.get(mon.nature)?.zh}</span>
+            {infected && <span className="pill pill-blue">病毒</span>}
+            {cured && <span className="pill">已有抗体</span>}
           </div>
         </div>
       </div>

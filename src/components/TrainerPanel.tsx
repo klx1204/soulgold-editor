@@ -1,7 +1,7 @@
 import React from 'react';
 import { SaveFile, w32 } from '../lib/save';
 import { decodeName, encodeName } from '../lib/pokemon';
-import { BADGE_JOHTO, BADGE_KANTO, BADGE_NAMES_JOHTO, BADGE_NAMES_KANTO, FLAGS_BY_ID } from '../lib/data';
+import { BADGE_JOHTO, BADGE_KANTO, BADGE_NAMES_JOHTO, BADGE_NAMES_KANTO, FLAGS_BY_ID, SPECIES } from '../lib/data';
 import { Button, Card, Field, NumberInput, SectionTitle, TextInput } from './ui';
 
 export function TrainerPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s: SaveFile) => void) => void }) {
@@ -125,16 +125,18 @@ export function TrainerPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s
 }
 
 function DexSummary({ save }: { save: SaveFile }) {
+  const seenDex = new Set<number>();
+  const johto = SPECIES.filter((s) => s.johto > 0 && !seenDex.has(s.johto) && seenDex.add(s.johto));
   let seen = 0;
   let caught = 0;
-  for (let i = 1; i <= 1025; i++) {
-    if (save.dexSeen(i)) seen++;
-    if (save.dexCaught(i)) caught++;
+  for (const s of johto) {
+    if (save.dexSeen(s.nat)) seen++;
+    if (save.dexCaught(s.nat)) caught++;
   }
   return (
     <div className="row gap">
-      <div className="mini-stat"><span>已发现</span><b>{seen}</b></div>
-      <div className="mini-stat"><span>已捕获</span><b>{caught}</b></div>
+      <div className="mini-stat"><span>城都已发现</span><b>{seen} / {johto.length}</b></div>
+      <div className="mini-stat"><span>城都已捕获</span><b>{caught}</b></div>
     </div>
   );
 }

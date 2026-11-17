@@ -49,7 +49,18 @@ function Badges({ save, mutate }: { save: SaveFile; mutate: (fn: (s: SaveFile) =
 function Dex({ save, mutate }: { save: SaveFile; mutate: (fn: (s: SaveFile) => void) => void }) {
   const [q, setQ] = React.useState('');
   const [limit, setLimit] = React.useState(120);
-  const list = React.useMemo(() => {
+  const [national, setNational] = React.useState(false);
+  const johtoList = React.useMemo(() => {
+    const seen = new Set<number>();
+    const out: typeof SPECIES = [];
+    for (const s of SPECIES) {
+      if (s.johto <= 0 || seen.has(s.johto)) continue;
+      seen.add(s.johto);
+      out.push(s);
+    }
+    return out.sort((a, b) => a.johto - b.johto);
+  }, []);
+  const nationalList = React.useMemo(() => {
     const seen = new Set<number>();
     const out: typeof SPECIES = [];
     for (const s of SPECIES) {
@@ -57,26 +68,29 @@ function Dex({ save, mutate }: { save: SaveFile; mutate: (fn: (s: SaveFile) => v
       seen.add(s.nat);
       out.push(s);
     }
-    return out;
+    return out.sort((a, b) => a.nat - b.nat);
   }, []);
-  const filtered = list.filter((s: any) => !q.trim() || `${s.zh} ${s.name} ${s.nat}`.toLowerCase().includes(q.toLowerCase()));
-  const seenCount = list.filter((s: any) => save.dexSeen(s.nat)).length;
-  const caughtCount = list.filter((s: any) => save.dexCaught(s.nat)).length;
+  const list = national ? nationalList : johtoList;
+  const filtered = list.filter((s) => !q.trim() || `${s.zh} ${s.name} ${s.johto} ${s.nat} ${s.id}`.toLowerCase().includes(q.toLowerCase()));
+  const seenCount = list.filter((s) => save.dexSeen(s.nat)).length;
+  const caughtCount = list.filter((s) => save.dexCaught(s.nat)).length;
   return (
     <Card className="pad">
       <div className="row between">
-        <h3>图鉴 <span className="muted small">发现 {seenCount} · 捕获 {caughtCount}</span></h3>
+        <h3>图鉴 <span className="muted small">{national ? `全国 ${nationalList.length}` : `城都 ${johtoList.length}`} · 发现 {seenCount} · 捕获 {caughtCount}</span></h3>
         <div className="row gap">
-          <Button size="sm" onClick={() => mutate((s) => filtered.forEach((x: any) => s.setDexCaught(x.nat, true)))}>当前结果全部捕获</Button>
-          <Button size="sm" variant="ghost" onClick={() => mutate((s) => filtered.forEach((x: any) => { s.setDexSeen(x.nat, false); s.setDexCaught(x.nat, false); }))}>当前结果清除</Button>
+          <label className="check-inline"><input type="checkbox" checked={national} onChange={(e) => { setNational(e.target.checked); setLimit(120); }} />显示全国图鉴</label>
+          <Button size="sm" onClick={() => mutate((s) => filtered.forEach((x) => s.setDexCaught(x.nat, true)))}>当前结果全部捕获</Button>
+          <Button size="sm" variant="ghost" onClick={() => mutate((s) => filtered.forEach((x) => { s.setDexSeen(x.nat, false); s.setDexCaught(x.nat, false); }))}>当前结果清除</Button>
         </div>
       </div>
-      <input className="input search" placeholder="搜索宝可梦" value={q} onChange={(e) => { setQ(e.target.value); setLimit(120); }} />
+      <div className="muted small" style={{ marginTop: 4 }}>游戏内存档按全国编号记录；城都图鉴共 702 个条目。赛富豪这类宝可梦会显示城都编号、全国编号和内部编号三个值。</div>
+      <input className="input search" placeholder="搜索宝可梦 / 城都编号 / 全国编号" value={q} onChange={(e) => { setQ(e.target.value); setLimit(120); }} />
       <div className="dex-list">
-        {filtered.slice(0, limit).map((s: any) => (
-          <div key={s.nat} className="dex-row">
-            <span className="dex-no">#{s.nat}</span>
-            <span className="grow">{s.zh || s.name} <span className="muted small">{s.name}</span></span>
+        {filtered.slice(0, limit).map((s) => (
+          <div key={`${s.nat}-${s.id}`} className="dex-row">
+            <span className="dex-no">{s.johto ? `城都 #${s.johto}` : `全国 #${s.nat}`}</span>
+            <span className="grow">{s.zh || s.name} <span className="muted small">{s.name} · 全国 #{s.nat} · 内部 #{s.id}</span></span>
             <label className="check-inline"><input type="checkbox" checked={save.dexSeen(s.nat)} onChange={(e) => mutate((sv) => sv.setDexSeen(s.nat, e.target.checked))} />发现</label>
             <label className="check-inline"><input type="checkbox" checked={save.dexCaught(s.nat)} onChange={(e) => mutate((sv) => sv.setDexCaught(s.nat, e.target.checked))} />捕获</label>
           </div>

@@ -1,11 +1,12 @@
 import React from 'react';
-import { BoxMon, calcStats, decodeName, encodeName, expForLevel, levelForExp, NATURES, applyStats } from '../lib/pokemon';
-import { ABILITIES_BY_CONST, ITEMS, MOVES, NATURES_BY_ID, SPECIES, SPECIES_BY_ID, TYPE_FILTER, TYPE_LIST, TYPE_ZH, abilityName, itemName, itemSub, moveName, moveSub, speciesName, speciesSub } from '../lib/data';
+import { BoxMon, calcStats, decodeName, encodeName, expForLevel, levelForExp, NATURES, applyStats, isShinyMon, setMonShiny } from '../lib/pokemon';
+import { ABILITIES_BY_CONST, ITEMS, MOVES, MOVES_BY_CONST, MOVES_BY_ID, NATURES_BY_ID, SPECIES, SPECIES_BY_ID, TYPE_FILTER, TYPE_LIST, TYPE_ZH, abilityName, itemName, itemSub, moveName, moveSub, natureEffect, speciesDex, speciesDexFull, speciesName, speciesSub } from '../lib/data';
 import { Button, Card, Field, Modal, NumberInput, Picker, TextInput, TypeChip } from './ui';
 
 interface Props {
   mon: BoxMon;
   isParty: boolean;
+  shinyOdds?: number;
   onClose: () => void;
   onApply: (mon: BoxMon) => void;
 }
@@ -15,7 +16,7 @@ const statLabels: { key: keyof BoxMon['ivs']; label: string }[] = [
   { key: 'spa', label: '特攻' }, { key: 'spd', label: '特防' }, { key: 'spe', label: '速度' },
 ];
 
-export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
+export function MonEditor({ mon: original, isParty, shinyOdds = 512, onClose, onApply }: Props) {
   const [mon, setMon] = React.useState(() => new BoxMon(original.data.slice()));
   const [sub, setSub] = React.useState<'base' | 'stats' | 'moves' | 'origin'>('base');
   const [nick, setNick] = React.useState(() => decodeName(mon.nicknameBytes));
@@ -114,7 +115,7 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
     <Modal
       wide
       title={`${speciesName(mon.species)}${speciesSub(mon.species) ? ` · ${speciesSub(mon.species)}` : ''}`}
-      subtitle={`${isParty ? '队伍' : '盒子'} · #${mon.species} · ${displayLevel} 级 · ${NATURES_BY_ID.get(mon.nature)?.zh ?? ''}`}
+      subtitle={`${isParty ? '队伍' : '盒子'} · ${speciesDex(mon.species)} · ${displayLevel} 级 · ${NATURES_BY_ID.get(mon.nature)?.zh ?? ''}`}
       onClose={onClose}
       footer={<><Button onClick={onClose}>取消</Button><Button variant="primary" onClick={apply}>应用修改</Button></>}
     >
@@ -150,6 +151,26 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
               <TextInput value={nick} onChange={(e) => { setNick(e.target.value); setNickEdited(true); }} maxLength={6} />
             </Field>
             <div className="muted small">原字节：{Array.from(mon.nicknameBytes).map((b) => b.toString(16).padStart(2, '0')).join(' ')}</div>
+            <div className="row gap wrap" style={{ marginTop: 10 }}>
+              <button className={`toggle-btn ${isShinyMon(mon, shinyOdds) ? 'on' : ''}`} onClick={() => update((m) => setMonShiny(m, !isShinyMon(m, shinyOdds), shinyOdds))}>
+                {isShinyMon(mon, shinyOdds) ? '★ 闪光' : '☆ 普通'}
+              </button>
+              <span className="muted small">闪光由 PID / OTID 与 shinyModifier 位共同决定，切换只改 modifier，不改 PID。</span>
+            </div>
+            <div className="row gap wrap" style={{ marginTop: 10 }}>
+              <Field label="Pokérus">
+                <select className="input" value={mon.pokerusDays > 0 ? 1 : mon.pokerusStrain > 0 ? 2 : 0}
+                  onChange={(e) => update((m) => { const v = Number(e.target.value); m.pokerus = v === 0 ? 0 : v === 1 ? 0x11 : 0x10; })}>
+                  <option value={0}>无 / 未感染</option>
+                  <option value={1}>感染中（获得双倍努力值）</option>
+                  <option value={2}>已治愈（有抗体）</option>
+                </select>
+              </Field>
+              {mon.pokerusStrain > 0 && <>
+                <Field label="毒株"><NumberInput value={mon.pokerusStrain} min={1} max={15} onChange={(v) => update((m) => { m.pokerusStrain = v; })} /></Field>
+                <Field label="剩余天数"><NumberInput value={mon.pokerusDays} min={0} max={15} onChange={(v) => update((m) => { m.pokerusDays = v; })} /></Field>
+              </>}
+            </div>
             <div className="row gap" style={{ marginTop: 12 }}>
               <Field label="等级">
                 <NumberInput value={displayLevel} min={1} max={100} onChange={setLevel} />
@@ -164,8 +185,9 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
             <div className="row gap">
               <Field label="性格" hint="通过隐藏性格修正，不改 PID">
                 <select className="input" value={mon.nature} onChange={(e) => update((m) => { m.nature = Number(e.target.value); })}>
-                  {NATURES.map((n, i) => <option key={n} value={i}>{NATURES_BY_ID.get(i)?.zh ?? n} / {n}</option>)}
+                  {NATURES.map((n, i) => <option key={n} value={i}>{NATURES_BY_ID.get(i)?.zh ?? n} / {n}（{natureEffect(i)}）</option>)}
                 </select>
+                <div className="muted small">{natureEffect(mon.nature)}</div>
               </Field>
               <Field label="特性槽位">
                 <select className="input" value={mon.abilityNum} onChange={(e) => update((m) => { m.abilityNum = Number(e.target.value); })}>
@@ -248,6 +270,7 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
         <div className="grid-2">
           <Card className="pad">
             <h3>身份数据</h3>
+            <div className="kv"><span>图鉴编号</span><span>{speciesDexFull(mon.species)}</span></div>
             <div className="kv"><span>PID</span><code>{hex(mon.pid, 8)}</code><Button size="sm" variant="ghost" onClick={() => update((m) => { m.pid = (Math.random() * 0xffffffff) >>> 0; })}>随机</Button></div>
             <div className="kv"><span>OT ID</span><code>{hex(mon.otId, 8)}</code></div>
             <div className="kv"><span>OT 名</span><span>{decodeName(mon.otNameBytes)}</span></div>
@@ -273,7 +296,7 @@ export function MonEditor({ mon: original, isParty, onClose, onApply }: Props) {
 
       {picker === 'species' && <SpeciesPicker onClose={() => setPicker(null)} onPick={(s) => setSpecies(s.id)} />}
       {picker === 'item' && <ItemPicker onClose={() => setPicker(null)} onPick={(i) => update((m) => { m.heldItem = i.id; })} />}
-      {typeof picker === 'number' && <MovePicker onClose={() => setPicker(null)} onPick={(m) => setMove(picker, m.id)} />}
+      {typeof picker === 'number' && <MovePicker speciesId={mon.species} onClose={() => setPicker(null)} onPick={(m) => setMove(picker, m.id)} />}
     </Modal>
   );
 }
@@ -304,18 +327,27 @@ function StatTable({ stats }: { stats: { maxHP: number; attack: number; defense:
 export function SpeciesPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: (typeof SPECIES)[number]) => void }) {
   return <Picker title="选择宝可梦" items={SPECIES.filter((s) => s.id > 0)} placeholder="中文名 / 英文名 / 编号"
     search={(s, q) => `${s.zh} ${s.name} ${s.id} ${s.nat}`.toLowerCase().includes(q)}
-    render={(s) => <><span className="pick-name">{s.zh || s.name}</span><span className="pick-sub">{s.name} · #{s.id} · {TYPE_FILTER(s.types).map((t) => TYPE_ZH[t]).join(' / ')}</span></>}
+    render={(s) => <><span className="pick-name">{s.zh || s.name}</span><span className="pick-sub">{s.name} · {speciesDexFull(s.id)} · {TYPE_FILTER(s.types).map((t) => TYPE_ZH[t]).join(' / ')}</span></>}
     onPick={onPick} onClose={onClose} />;
 }
-export function ItemPicker({ onClose, onPick }: { onClose: () => void; onPick: (i: (typeof ITEMS)[number]) => void }) {
-  return <Picker title="选择道具" items={ITEMS.filter((i) => i.id > 0)} placeholder="中文名 / 英文名 / 编号"
+export function ItemPicker({ pocket, onClose, onPick }: { pocket?: number; onClose: () => void; onPick: (i: (typeof ITEMS)[number]) => void }) {
+  return <Picker title="选择道具" items={ITEMS.filter((i) => i.id > 0 && (pocket === undefined || i.pocket === pocket))} placeholder="中文名 / 英文名 / 编号"
     search={(i, q) => `${i.zh} ${i.name} ${i.id} ${i.const}`.toLowerCase().includes(q)}
     render={(i) => <><span className="pick-name">{i.zh || i.name}</span><span className="pick-sub">{i.name} · #{i.id} · {i.desc.slice(0, 60)}</span></>}
     onPick={onPick} onClose={onClose} />;
 }
-export function MovePicker({ onClose, onPick }: { onClose: () => void; onPick: (m: (typeof MOVES)[number]) => void }) {
-  return <Picker title="选择招式" items={MOVES.filter((m) => m.id > 0)} placeholder="中文名 / 英文名 / 编号"
+export function MovePicker({ speciesId, onClose, onPick }: { speciesId: number; onClose: () => void; onPick: (m: (typeof MOVES)[number]) => void }) {
+  const sp = SPECIES_BY_ID.get(speciesId);
+  const levels = new Map<number, number>();
+  if (sp) {
+    for (const e of sp.levelUp) {
+      const m = MOVES_BY_CONST.get(e.move);
+      if (m) levels.set(m.id, Math.min(levels.get(m.id) ?? 999, e.level));
+    }
+  }
+  const legal = (sp?.learnable ?? []).map((id) => MOVES_BY_ID.get(id)).filter((m): m is (typeof MOVES)[number] => !!m);
+  return <Picker title={`${sp ? speciesName(sp.id) : ''} 可学招式`} items={legal} placeholder="搜索合法招式"
     search={(m, q) => `${m.zh} ${m.name} ${m.id} ${m.const}`.toLowerCase().includes(q)}
-    render={(m) => <><span className="pick-name">{m.zh || m.name}</span><span className="pick-sub">{m.name} · {TYPE_ZH[m.type] ?? m.type} · 威力 {m.power || '—'} · PP {m.pp}</span></>}
+    render={(m) => <><span className="pick-name">{m.zh || m.name}{levels.has(m.id) ? <em className="pick-tag">Lv.{levels.get(m.id)}</em> : <em className="pick-tag">招式机/教学</em>}</span><span className="pick-sub">{m.name} · {TYPE_ZH[m.type] ?? m.type} · 威力 {m.power || '—'} · PP {m.pp}</span></>}
     onPick={onPick} onClose={onClose} />;
 }
