@@ -1,0 +1,10 @@
+node_modules
+dist
+.DS_Store
+*.sav
+*.sa1
+*.dsv
+*.gba
+*.bps
+*.ss*
+tsconfig.tsbuildinfo
