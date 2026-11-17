@@ -189,8 +189,9 @@ export class SaveFile {
     out.set(this.raw.subarray(overflow * SECTOR_SIZE, overflow * SECTOR_SIZE + SECTOR_DATA), pos);
     pos += SECTOR_DATA;
     const s1End = this.phys[4];
-    out.set(this.raw.subarray(s1End * SECTOR_SIZE + SB1_TAIL_OFF,
-      s1End * SECTOR_SIZE + SB1_TAIL_OFF + SB1_TAIL_LEN), pos);
+    const tailInSector = SB1_TAIL_OFF - 3 * SECTOR_DATA;
+    out.set(this.raw.subarray(s1End * SECTOR_SIZE + tailInSector,
+      s1End * SECTOR_SIZE + tailInSector + SB1_TAIL_LEN), pos);
     pos += SB1_TAIL_LEN;
     const aux = 28 + this.slot;
     out.set(this.raw.subarray(aux * SECTOR_SIZE + AUX_TAIL_OFF,

@@ -49,6 +49,7 @@ export function TrainerPanel({ save, mutate }: { save: SaveFile; mutate: (fn: (s
             <Field label="操作"><Button size="sm" variant={nameEdited ? 'primary' : 'default'} onClick={applyName} disabled={!nameEdited}>写入名字</Button></Field>
           </div>
           <div className="muted small">当前原始字节：{Array.from(t.name).map((b) => b.toString(16).padStart(2, '0')).join(' ')}</div>
+          <div className="muted small">名字使用汉化字库编码，内置约 830 个常用字；未知字符显示为 ⟨XXXX⟩。</div>
           <div className="row gap" style={{ marginTop: 16 }}>
             <Field label="性别">
               <select className="input" value={t.gender} onChange={(e) => mutate((s) => { s.sb2[8] = Number(e.target.value); })}>
