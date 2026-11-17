@@ -57,7 +57,11 @@ function useTheme() {
     document.documentElement.style.colorScheme = resolved;
     try { localStorage.setItem(THEME_KEY, mode); } catch {}
   }, [mode, resolved]);
-  const cycle = () => setMode((m) => m === 'system' ? 'light' : m === 'light' ? 'dark' : 'system');
+  // Make the first click always produce a visible change, then cycle through the other two modes.
+  const cycle = () => {
+    const order: ThemeMode[] = systemDark ? ['system', 'light', 'dark'] : ['system', 'dark', 'light'];
+    setMode((m) => order[(order.indexOf(m) + 1) % order.length]);
+  };
   return { mode, resolved, cycle };
 }
 
@@ -148,7 +152,7 @@ export default function App() {
         </div>
         <div className="top-actions">
           <button className="theme-btn" onClick={theme.cycle}
-            title={`当前主题：${THEME_META[theme.mode].label}；点击切换（跟随系统 → 浅色 → 深色）`}
+            title={`当前主题：${THEME_META[theme.mode].label}；点击切换（跟随系统 / 浅色 / 深色）`}
             aria-label={`主题：${THEME_META[theme.mode].label}，点击切换`}>
             <span className="theme-icon">{THEME_META[theme.mode].icon}</span>
             <span className="theme-label">{THEME_META[theme.mode].label}</span>
